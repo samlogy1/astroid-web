@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { Activity, Server, Cpu, RefreshCw, XCircle, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useNetworkHealth } from './useNetworkHealth';
+import { focusTrapStack } from '@/hooks/focusTrapStack';
 import { cn } from '@/lib/cn';
 
 /** Shared, brand-tinted focus ring for widget controls (WCAG AA). */
@@ -13,6 +14,29 @@ const WIDGET_FOCUS =
 export function NetworkHealthWidget() {
   const { data, isLoading, isError, refetch, isFetching } = useNetworkHealth(5000);
   const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
+
+  // Non-modal popover: Escape closes it and returns focus to the trigger;
+  // clicking outside closes it without moving focus.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || focusTrapStack.size() > 0) return;
+      setIsOpen(false);
+      triggerRef.current?.focus();
+    };
+    const onPointerDown = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setIsOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('mousedown', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('mousedown', onPointerDown);
+    };
+  }, [isOpen]);
 
   if (isLoading && !data) {
     return (
@@ -28,7 +52,7 @@ export function NetworkHealthWidget() {
       <div
         role="status"
         aria-label="Stellar RPC network health: offline"
-        className="flex items-center gap-1.5 rounded-button border border-rose-500/30 bg-rose-500/10 px-2.5 py-1 text-2xs font-semibold text-rose-400"
+        className="flex items-center gap-1.5 rounded-button border border-danger/30 bg-danger/10 px-2.5 py-1 text-2xs font-semibold text-danger"
       >
         <XCircle className="h-3.5 w-3.5" aria-hidden />
         <span>RPC Offline</span>
@@ -36,7 +60,7 @@ export function NetworkHealthWidget() {
           type="button"
           onClick={() => refetch()}
           className={cn(
-            'ml-1 rounded-xs text-2xs underline hover:text-white',
+            'ml-1 rounded-xs text-2xs underline hover:text-foreground',
             WIDGET_FOCUS,
           )}
         >
@@ -52,10 +76,12 @@ export function NetworkHealthWidget() {
   const badgeVariant = isHealthy ? 'success' : isDegraded ? 'warning' : 'danger';
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
+        aria-controls={isOpen ? panelId : undefined}
         className={cn(
           'flex items-center gap-2 rounded-button border border-border bg-surface px-2.5 py-1.5 text-2xs font-medium transition-colors hover:border-gold hover:bg-surface-secondary',
           WIDGET_FOCUS,
@@ -67,12 +93,12 @@ export function NetworkHealthWidget() {
         <span className="relative flex h-2 w-2">
           <span
             className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${
-              isHealthy ? 'bg-emerald-400' : isDegraded ? 'bg-amber-400' : 'bg-rose-400'
+              isHealthy ? 'bg-success' : isDegraded ? 'bg-warning' : 'bg-danger'
             }`}
           />
           <span
             className={`relative inline-flex h-2 w-2 rounded-full ${
-              isHealthy ? 'bg-emerald-500' : isDegraded ? 'bg-amber-500' : 'bg-rose-500'
+              isHealthy ? 'bg-success' : isDegraded ? 'bg-warning' : 'bg-danger'
             }`}
           />
         </span>
@@ -95,6 +121,7 @@ export function NetworkHealthWidget() {
       {/* Expanded Health Popover Panel */}
       {isOpen && (
         <div
+          id={panelId}
           role="dialog"
           aria-label="Stellar network health details"
           className="absolute right-0 top-full mt-2 z-50 w-72 rounded-card border border-border bg-surface p-4 shadow-xl space-y-3"
@@ -132,7 +159,7 @@ export function NetworkHealthWidget() {
 
             <div className="flex justify-between items-center bg-surface-secondary/60 p-2 rounded-button">
               <span className="flex items-center gap-1.5 text-foreground-secondary text-2xs">
-                <Server className="h-3.5 w-3.5 text-blue-400" />
+                <Server className="h-3.5 w-3.5 text-info" />
                 <span>Horizon API Node</span>
               </span>
               <Badge variant="success" size="sm" className="text-3xs uppercase">
