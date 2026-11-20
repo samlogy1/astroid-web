@@ -54,13 +54,15 @@ function TypingIndicator() {
   return (
     <div className="flex gap-3" role="status" aria-live="polite">
       <AssistantAvatar />
-      <div className="flex items-center gap-1.5 rounded-card border border-border bg-surface-secondary/60 px-4 py-3.5">
+      {/* Spacing scale is custom (1 = 4px, 2 = 8px…; no half steps), hence the explicit dot size. */}
+      <div className="flex h-8 items-center gap-1 rounded-card border border-border bg-surface-secondary/60 px-4">
+
         <span className="sr-only">Assistant is generating a response…</span>
         {[0, 1, 2].map((dot) => (
           <motion.span
             key={dot}
             aria-hidden
-            className="h-1.5 w-1.5 rounded-full bg-gold"
+            className="h-[7px] w-[7px] rounded-full bg-gold"
             animate={reduceMotion ? { opacity: 0.7 } : { opacity: [0.25, 1, 0.25], y: [0, -3, 0] }}
             transition={
               reduceMotion

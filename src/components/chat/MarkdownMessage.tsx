@@ -67,7 +67,7 @@ function StreamingCaret() {
   return (
     <span
       aria-hidden
-      className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] animate-pulse rounded-full bg-gold align-baseline"
+      className="ml-[2px] inline-block h-[1em] w-[2px] translate-y-[2px] animate-pulse rounded-full bg-gold align-baseline"
     />
   );
 }
@@ -99,7 +99,7 @@ function renderBlock(block: BlockNode, key: string, caret: ReactNode): ReactNode
           className={cn('space-y-1 pl-5 marker:text-foreground-muted', block.ordered ? 'list-decimal' : 'list-disc')}
         >
           {block.items.map((item, index) => (
-            <li key={`${key}-${index}`} className="break-words pl-0.5">
+            <li key={`${key}-${index}`} className="break-words pl-[2px]">
               {renderInline(item, `${key}-${index}`)}
               {index === block.items.length - 1 ? caret : null}
             </li>

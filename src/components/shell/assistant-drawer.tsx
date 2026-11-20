@@ -156,11 +156,20 @@ export function AssistantDrawer() {
     if (!open || !panel) return undefined;
     returnFocusRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const frame = window.requestAnimationFrame(() => {
-      panel
-        .querySelector<HTMLElement>('#financial-briefing-prompt')
-        ?.focus({ preventScroll: true });
-    });
+    // The wrapper's `visibility` transitions from `hidden`, and browsers refuse
+    // to focus an element that is still computed hidden at that instant. Retry
+    // each frame (bounded) until focus actually lands in the composer.
+    let frame = 0;
+    let attempts = 0;
+    const focusComposer = () => {
+      const composer = panel.querySelector<HTMLElement>('#financial-briefing-prompt');
+      composer?.focus({ preventScroll: true });
+      attempts += 1;
+      if (composer && document.activeElement !== composer && attempts < 30) {
+        frame = window.requestAnimationFrame(focusComposer);
+      }
+    };
+    frame = window.requestAnimationFrame(focusComposer);
 
     return () => {
       window.cancelAnimationFrame(frame);
